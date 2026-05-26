@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
   </div>
   <script>
     try {
-      localStorage.setItem('spotify_credentials', ${JSON.stringify(JSON.stringify(credentials))});
+      localStorage.setItem('spotify_credentials', JSON.stringify(${JSON.stringify(credentials)}));
       // Set a flag so the app knows auth just completed
       localStorage.setItem('spotify_auth_just_completed', 'true');
     } catch (e) {
