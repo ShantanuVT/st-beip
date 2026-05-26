@@ -50,7 +50,9 @@ export async function GET(request: NextRequest) {
 
   try {
     // Exchange the authorization code for tokens using PKCE
-    // Use the same redirect URI as the client-side login to ensure it matches
+    // Use the same redirect URI as the client — must match exactly what was
+    // sent in the authorization request, otherwise Spotify rejects it.
+    // We derive it from the request origin so it works seamlessly on any domain.
     const redirectUri = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI || `${request.nextUrl.origin}/api/spotify/callback`;
 
     const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {

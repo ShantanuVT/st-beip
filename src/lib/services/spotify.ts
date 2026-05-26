@@ -17,7 +17,16 @@ const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1';
 const SPOTIFY_GRAPHQL_URL = 'https://api.spotify.com/v1/graphql';
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || '';
-const REDIRECT_URI = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI || 'http://localhost:3000/api/spotify/callback';
+// Must be a function so it works on any domain (both localhost and production)
+// Falls back to the current origin for seamless local + production use
+function getRedirectUri(): string {
+  return (
+    process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI ||
+    (typeof window !== 'undefined'
+      ? `${window.location.origin}/api/spotify/callback`
+      : 'http://localhost:3000/api/spotify/callback')
+  );
+}
 const SCOPES = [
   'playlist-read-private',
   'playlist-read-collaborative',
@@ -130,7 +139,7 @@ export class SpotifyService {
     const params = new URLSearchParams({
       client_id: CLIENT_ID,
       response_type: 'code',
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: getRedirectUri(),
       code_challenge_method: 'S256',
       code_challenge: codeChallenge,
       scope: SCOPES,
@@ -151,7 +160,7 @@ export class SpotifyService {
         client_id: CLIENT_ID,
         grant_type: 'authorization_code',
         code,
-        redirect_uri: REDIRECT_URI,
+        redirect_uri: getRedirectUri(),
         code_verifier: codeVerifier,
       }),
     });
