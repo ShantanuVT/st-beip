@@ -1,0 +1,274 @@
+@tailwind base;
+@tailwind utilities;
+@tailwind components;
+
+/* ──────────────────────────────────────────────
+   CSS Custom Properties (Theme Variables)
+   Applied by ThemeProvider via JavaScript
+   ────────────────────────────────────────────── */
+
+:root {
+  --color-surface: #0f0f11;
+  --color-surface-alt: #1a1a1e;
+  --color-primary: #6366f1;
+  --color-secondary: #818cf8;
+  --color-accent: #a855f7;
+  --color-accent-glow: rgba(168, 85, 247, 0.4);
+  --color-text-primary: #f1f1f3;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #52525b;
+  --color-border: #27272a;
+
+  /* Edge lighting hue (used in static-cycle mode) */
+  --edge-hue: 0deg;
+
+  /* Performance defaults */
+  --animation-duration-fast: 150ms;
+  --animation-duration-normal: 300ms;
+  --animation-duration-slow: 500ms;
+}
+
+/* Register --edge-hue as an animatable CSS property for smooth hue rotation */
+@property --edge-hue {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* ──────────────────────────────────────────────
+   Base Styles
+   ────────────────────────────────────────────── */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Prevent mobile text selection on gesture zones */
+.gesture-zone {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ──────────────────────────────────────────────
+   Scrollbar Styling
+   ────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+/* ──────────────────────────────────────────────
+   Selection Styling
+   ────────────────────────────────────────────── */
+
+::selection {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+/* ──────────────────────────────────────────────
+   Range Input Styling
+   ────────────────────────────────────────────── */
+
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-alt);
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  margin-top: -4px;
+  box-shadow: 0 0 10px var(--color-accent-glow);
+  transition: transform var(--animation-duration-fast) ease;
+}
+
+input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+input[type='range']::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-alt);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: none;
+  box-shadow: 0 0 10px var(--color-accent-glow);
+}
+
+/* ──────────────────────────────────────────────
+   Focus Ring Styling
+   ────────────────────────────────────────────── */
+
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ──────────────────────────────────────────────
+   Animation Performance Classes
+   ────────────────────────────────────────────── */
+
+.gpu-layer {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.anim-fast {
+  transition-duration: var(--animation-duration-fast);
+}
+
+.anim-normal {
+  transition-duration: var(--animation-duration-normal);
+}
+
+.anim-slow {
+  transition-duration: var(--animation-duration-slow);
+}
+
+/* Hardware-accelerated hover states */
+.hover-lift {
+  transition: transform var(--animation-duration-fast) ease, box-shadow var(--animation-duration-fast) ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.hover-glow {
+  transition: box-shadow var(--animation-duration-fast) ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px var(--color-accent-glow);
+}
+
+/* ──────────────────────────────────────────────
+   Edge Lighting Animation
+   ────────────────────────────────────────────── */
+
+@keyframes edge-cycle-hue {
+  0% {
+    --edge-hue: 0deg;
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    --edge-hue: 360deg;
+    filter: hue-rotate(360deg);
+  }
+}
+
+.edge-animate-cycle {
+  animation: edge-cycle-hue 4s linear infinite;
+  will-change: filter;
+}
+
+/* ──────────────────────────────────────────────
+   Loading Skeleton
+   ────────────────────────────────────────────── */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-alt) 25%,
+    var(--color-border) 50%,
+    var(--color-surface-alt) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ──────────────────────────────────────────────
+   Responsive Utilities
+   ────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 3px;
+  }
+}
+
+/* ──────────────────────────────────────────────
+   Screen Reader Only
+   ────────────────────────────────────────────── */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
