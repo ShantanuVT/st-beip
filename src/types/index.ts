@@ -136,6 +136,7 @@ export interface SpotifyPlaylist {
   imageUrl: string;
   tracks: Track[];
   owner: string;
+  trackCount?: number;
 }
 
 export interface SpotifyAuthState {

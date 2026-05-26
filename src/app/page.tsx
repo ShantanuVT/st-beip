@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Controls } from '@/components/player/Controls';
 import { usePlayerStore } from '@/lib/store/playerStore';
 import { useEdgeLightingStore } from '@/lib/store/playerStore';
+import { useLibraryStore } from '@/lib/store/libraryStore';
 import type { Track, EdgeLightingMode } from '@/types';
 
-// Sample tracks for demonstration
+// Sample tracks for demonstration (fallback when Spotify not connected)
 const SAMPLE_TRACKS: Track[] = [
   { id: '1', title: 'Midnight Dreams', artist: 'Lunar Echo', album: 'Dreamscape', albumArt: '', duration: 247, source: 'local', sourceId: '' },
   { id: '2', title: 'Electric Pulse', artist: 'Neon Wave', album: 'Digital Horizon', albumArt: '', duration: 203, source: 'local', sourceId: '' },
@@ -20,6 +20,13 @@ const SAMPLE_TRACKS: Track[] = [
 export default function HomePage() {
   const { playTrack, currentTrack, isPlaying, currentTime, duration } = usePlayerStore();
   const { mode, setMode } = useEdgeLightingStore();
+  const {
+    recentlyPlayed,
+    recommendations,
+    resolveTrackToYouTube,
+    generateRecommendations,
+    addToRecentlyPlayed,
+  } = useLibraryStore();
 
   const edgeModes: { value: EdgeLightingMode; label: string }[] = [
     { value: 'none', label: 'None' },
@@ -106,55 +113,171 @@ export default function HomePage() {
         <Controls size="sm" />
       </motion.div>
 
-      {/* Sample Tracks */}
-      <section>
-        <h2 className="text-lg font-semibold text-text-primary mb-4">Featured Tracks</h2>
-        <div className="grid gap-2">
-          {SAMPLE_TRACKS.map((track, index) => (
-            <motion.button
-              key={track.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 * index }}
-              onClick={() => playTrack(track)}
-              className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all hover:bg-surface-alt active:scale-[0.99] group ${
-                currentTrack?.id === track.id ? 'bg-surface-alt border border-primary/30' : 'border border-transparent'
-              }`}
-            >
-              {/* Album Art Placeholder */}
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                index % 3 === 0 ? 'bg-gradient-to-br from-primary/30 to-accent/30' :
-                index % 3 === 1 ? 'bg-gradient-to-br from-blue-500/30 to-cyan-500/30' :
-                'bg-gradient-to-br from-emerald-500/30 to-teal-500/30'
-              }`}>
-                <svg className="w-6 h-6 text-text-secondary" viewBox="0 0 24 24" fill="currentColor" opacity="0.6">
-                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-                </svg>
-              </div>
-
-              {/* Track Info */}
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium text-text-primary truncate group-hover:text-primary transition-colors">
-                  {track.title}
-                </p>
-                <p className="text-xs text-text-secondary truncate">{track.artist} · {track.album}</p>
-              </div>
-
-              {/* Duration */}
-              <span className="text-xs text-text-muted">{formatTime(track.duration)}</span>
-
-              {/* Play indicator */}
-              {currentTrack?.id === track.id && isPlaying && (
-                <div className="flex gap-0.5 items-end h-4">
-                  <span className="w-0.5 h-3 bg-primary rounded-full animate-pulse" />
-                  <span className="w-0.5 h-4 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-                  <span className="w-0.5 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+      {/* ──────────────────────────────────────── */}
+      {/* Recently Played Section               */}
+      {/* Shows tracks you've played recently   */}
+      {/* ──────────────────────────────────────── */}
+      {recentlyPlayed.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <h2 className="text-lg font-semibold text-text-primary">Recently Played</h2>
+          </div>
+          <div className="grid gap-1">
+            {recentlyPlayed.slice(0, 8).map((track: Track, index: number) => (
+              <motion.button
+                key={track.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+                onClick={async () => {
+                  const resolved = await resolveTrackToYouTube(track);
+                  playTrack(resolved);
+                  addToRecentlyPlayed(resolved);
+                }}
+                className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-all hover:bg-surface-alt active:scale-[0.99] group ${
+                  currentTrack?.id === track.id ? 'bg-surface-alt border border-primary/30' : 'border border-transparent'
+                }`}
+              >
+                <span className="w-6 text-center text-xs text-text-muted tabular-nums">{index + 1}</span>
+                <div className="w-11 h-11 rounded-xl overflow-hidden bg-surface-alt flex-shrink-0">
+                  {track.albumArt ? (
+                    <img src={track.albumArt} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-text-muted" viewBox="0 0 24 24" fill="currentColor" opacity="0.4">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
-              )}
-            </motion.button>
-          ))}
-        </div>
-      </section>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-medium text-text-primary truncate group-hover:text-primary transition-colors">
+                    {track.title}
+                  </p>
+                  <p className="text-xs text-text-secondary truncate">{track.artist}</p>
+                </div>
+                <span className="text-xs text-text-muted tabular-nums">{formatTime(track.duration)}</span>
+                {currentTrack?.id === track.id && isPlaying && (
+                  <div className="flex gap-0.5 items-end h-4">
+                    <span className="w-0.5 h-3 bg-primary rounded-full animate-pulse" />
+                    <span className="w-0.5 h-4 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <span className="w-0.5 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                  </div>
+                )}
+              </motion.button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ──────────────────────────────────────────── */}
+      {/* Smart Recommendations Section               */}
+      {/* Generated from your recently played tracks  */}
+      {/* ──────────────────────────────────────────── */}
+      {recommendations.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <svg className="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+            <h2 className="text-lg font-semibold text-text-primary">Recommended for You</h2>
+          </div>
+          <div className="grid gap-1">
+            {recommendations.slice(0, 5).map((rec: { track: Track; score: number; reason: string }, index: number) => (
+              <motion.button
+                key={rec.track.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.04 }}
+                onClick={async () => {
+                  const resolved = await resolveTrackToYouTube(rec.track);
+                  playTrack(resolved);
+                  addToRecentlyPlayed(resolved);
+                  useLibraryStore.getState().generateRecommendations(resolved);
+                }}
+                className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-surface-alt transition-all group active:scale-[0.99]"
+              >
+                <div className="w-11 h-11 rounded-xl overflow-hidden bg-surface-alt flex-shrink-0">
+                  {rec.track.albumArt ? (
+                    <img src={rec.track.albumArt} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-text-muted" viewBox="0 0 24 24" fill="currentColor" opacity="0.4">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
+                    {rec.track.title}
+                  </p>
+                  <p className="text-xs text-text-secondary truncate">{rec.track.artist}</p>
+                </div>
+                <span className="text-[10px] text-text-muted/60 px-2 py-1 rounded-full bg-surface-alt/80 whitespace-nowrap">
+                  {rec.reason}
+                </span>
+              </motion.button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Featured Tracks */}
+      {recentlyPlayed.length === 0 && (
+        <section>
+          <h2 className="text-lg font-semibold text-text-primary mb-4">Featured Tracks</h2>
+          <div className="grid gap-2">
+            {SAMPLE_TRACKS.map((track, index) => (
+              <motion.button
+                key={track.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 * index }}
+                onClick={() => playTrack(track)}
+                className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all hover:bg-surface-alt active:scale-[0.99] group ${
+                  currentTrack?.id === track.id ? 'bg-surface-alt border border-primary/30' : 'border border-transparent'
+                }`}
+              >
+                {/* Album Art Placeholder */}
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  index % 3 === 0 ? 'bg-gradient-to-br from-primary/30 to-accent/30' :
+                  index % 3 === 1 ? 'bg-gradient-to-br from-blue-500/30 to-cyan-500/30' :
+                  'bg-gradient-to-br from-emerald-500/30 to-teal-500/30'
+                }`}>
+                  <svg className="w-6 h-6 text-text-secondary" viewBox="0 0 24 24" fill="currentColor" opacity="0.6">
+                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+                  </svg>
+                </div>
+
+                {/* Track Info */}
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-medium text-text-primary truncate group-hover:text-primary transition-colors">
+                    {track.title}
+                  </p>
+                  <p className="text-xs text-text-secondary truncate">{track.artist} · {track.album}</p>
+                </div>
+
+                {/* Duration */}
+                <span className="text-xs text-text-muted">{formatTime(track.duration)}</span>
+
+                {/* Play indicator */}
+                {currentTrack?.id === track.id && isPlaying && (
+                  <div className="flex gap-0.5 items-end h-4">
+                    <span className="w-0.5 h-3 bg-primary rounded-full animate-pulse" />
+                    <span className="w-0.5 h-4 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <span className="w-0.5 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                  </div>
+                )}
+              </motion.button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Feature Highlights */}
       <motion.section

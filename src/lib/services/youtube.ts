@@ -118,7 +118,11 @@ export class YouTubeResolver {
     }
 
     // Build search query
-    const query = `${track.artist} - ${track.title} audio`;
+    // IMPORTANT: Use exact track name + artist WITHOUT extra keywords
+    // to preserve the original language. Adding "audio" or "official"
+    // can bias YouTube's search toward different language versions.
+    // E.g., a Tamil song title in Tamil script should stay in Tamil.
+    const query = `${track.artist} - ${track.title}`;
 
     try {
       const result = await this.searchTrack(query);

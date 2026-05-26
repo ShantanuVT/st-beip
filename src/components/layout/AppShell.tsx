@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SidePlayer } from '@/components/layout/SidePlayer';
 import { MobilePlayer } from '@/components/layout/MobilePlayer';
 import { EdgeLighting } from '@/components/edge-lighting/EdgeLighting';
 import { AudioEngine } from '@/components/player/AudioEngine';
 import { ThemeCreator } from '@/components/theme/ThemeCreator';
 import { RoomSystem } from '@/components/room/RoomSystem';
+import { SpotifyLibrary } from '@/components/spotify/SpotifyLibrary';
 import { useEdgeLightingStore } from '@/lib/store/playerStore';
 import type { FrequencyData } from '@/types';
 
@@ -30,6 +32,7 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const [showThemeCreator, setShowThemeCreator] = useState(false);
   const [showRoomSystem, setShowRoomSystem] = useState(false);
+  const [showSpotifyLibrary, setShowSpotifyLibrary] = useState(false);
   const [frequencyData, setFrequencyData] = useState<FrequencyData | undefined>(undefined);
   const { mode } = useEdgeLightingStore();
 
@@ -80,8 +83,12 @@ export function AppShell({ children }: AppShellProps) {
                 </svg>
               </button>
 
-              {/* Playlists */}
-              <button className="w-10 h-10 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-alt transition-all" title="Playlists">
+              {/* Playlists / Spotify */}
+              <button
+                onClick={() => setShowSpotifyLibrary(true)}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-alt transition-all"
+                title="Spotify Library"
+              >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 18V5l12-2v13" />
                   <circle cx="6" cy="18" r="3" />
@@ -180,6 +187,44 @@ export function AppShell({ children }: AppShellProps) {
           isOpen={showRoomSystem}
           onClose={() => setShowRoomSystem(false)}
         />
+
+        {/* Spotify Library Panel */}
+        <AnimatePresence>
+          {showSpotifyLibrary && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowSpotifyLibrary(false)}
+                className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+              />
+
+              {/* Panel */}
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                className="fixed right-0 top-0 h-full z-50 w-full max-w-md bg-surface border-l border-border shadow-2xl"
+              >
+                {/* Close button */}
+                <button
+                  onClick={() => setShowSpotifyLibrary(false)}
+                  className="absolute top-3 right-3 z-10 w-8 h-8 rounded-lg flex items-center justify-center
+                    text-text-secondary hover:text-text-primary hover:bg-surface-alt transition-all"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+
+                <SpotifyLibrary />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </AudioEngine>
   );
