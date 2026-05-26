@@ -215,7 +215,11 @@ export class SpotifyService {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (!response.ok) throw new Error('Failed to fetch playlists');
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => '');
+      console.error('Spotify API error:', response.status, errorBody);
+      throw new Error(`Spotify API ${response.status}: ${errorBody.slice(0, 100) || response.statusText}`);
+    }
     const data = await response.json();
     return data.items.map(this.mapSpotifyPlaylist.bind(this));
   }
